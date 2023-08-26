@@ -38,7 +38,7 @@ const styles = {
   },
 };
 
-export default function Maps() {
+export default function SavedApps() {
   const classes = styles;
 
   //profile pic
