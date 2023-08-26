@@ -1,294 +1,208 @@
-import { Helmet } from 'react-helmet-async';
-import { filter } from 'lodash';
-import { sentenceCase } from 'change-case';
-import { useState } from 'react';
-// @mui
-import {
-  Card,
-  Table,
-  Stack,
-  Paper,
-  Avatar,
-  Button,
-  Popover,
-  Checkbox,
-  TableRow,
-  MenuItem,
-  TableBody,
-  TableCell,
-  Container,
-  Typography,
-  IconButton,
-  TableContainer,
-  TablePagination,
-} from '@mui/material';
-// components
-import Label from '../components/label';
-import Iconify from '../components/iconify';
-import Scrollbar from '../components/scrollbar';
-// sections
-import { UserListHead, UserListToolbar } from '../sections/@dashboard/user';
-// mock
-import USERLIST from '../_mock/user';
+import React, { useState, useEffect } from 'react';
+import { styled } from '@mui/system';
+import { Card, CardHeader, CardContent, CardActions, Button, Grid, TextField, Typography } from '@mui/material';
+import mockProfileImage from '../images/blank_pfp.png';
 
-// ----------------------------------------------------------------------
+const styles = {
+  cardCategoryWhite: {
+    color: 'rgba(255,255,255,.62)',
+    margin: '0',
+    fontSize: '14px',
+    marginTop: '0',
+    marginBottom: '0',
+  },
+  cardTitleWhite: {
+    color: '#FFFFFF',
+    marginTop: '0px',
+    minHeight: 'auto',
+    fontWeight: '300',
+    fontFamily: "'Roboto', 'Helvetica', 'Arial', sans-serif",
+    marginBottom: '3px',
+    textDecoration: 'none',
+  },
+};
 
-const TABLE_HEAD = [
-  { id: 'name', label: 'Name', alignRight: false },
-  { id: 'company', label: 'Company', alignRight: false },
-  { id: 'role', label: 'Role', alignRight: false },
-  { id: 'isVerified', label: 'Verified', alignRight: false },
-  { id: 'status', label: 'Status', alignRight: false },
-  { id: '' },
-];
-
-// ----------------------------------------------------------------------
-
-function descendingComparator(a, b, orderBy) {
-  if (b[orderBy] < a[orderBy]) {
-    return -1;
-  }
-  if (b[orderBy] > a[orderBy]) {
-    return 1;
-  }
-  return 0;
-}
-
-function getComparator(order, orderBy) {
-  return order === 'desc'
-    ? (a, b) => descendingComparator(a, b, orderBy)
-    : (a, b) => -descendingComparator(a, b, orderBy);
-}
-
-function applySortFilter(array, comparator, query) {
-  const stabilizedThis = array.map((el, index) => [el, index]);
-  stabilizedThis.sort((a, b) => {
-    const order = comparator(a[0], b[0]);
-    if (order !== 0) return order;
-    return a[1] - b[1];
+export default function UserProfile() {
+  const [userData, setUserData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    skills: '',
+    interests: '',
+    bio: '',
   });
-  if (query) {
-    return filter(array, (_user) => _user.name.toLowerCase().indexOf(query.toLowerCase()) !== -1);
-  }
-  return stabilizedThis.map((el) => el[0]);
-}
 
-export default function UserPage() {
-  const [open, setOpen] = useState(null);
+  const [pfpUrl, setPfpUrl] = useState('');
 
-  const [page, setPage] = useState(0);
+  //profile pic
+  const [profilePic, setProfilePic] = useState(mockProfileImage); // Initially set to a default profile image or empty string
 
-  const [order, setOrder] = useState('asc');
+  const [editMode, setEditMode] = useState(false);
 
-  const [selected, setSelected] = useState([]);
-
-  const [orderBy, setOrderBy] = useState('name');
-
-  const [filterName, setFilterName] = useState('');
-
-  const [rowsPerPage, setRowsPerPage] = useState(5);
-
-  const handleOpenMenu = (event) => {
-    setOpen(event.currentTarget);
+  const getSignedUrl = async (fileName, fileType) => {
+    const response = await fetch('/api/sign-s3', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ fileName, fileType }),
+    });
+    const data = await response.json();
+    return data.signedUrl;
   };
 
-  const handleCloseMenu = () => {
-    setOpen(null);
+  const uploadToS3 = async (signedUrl, file) => {
+    await fetch(signedUrl, {
+      method: 'PUT',
+      body: file,
+      headers: {
+        'Content-Type': file.type,
+      },
+    });
   };
 
-  const handleRequestSort = (event, property) => {
-    const isAsc = orderBy === property && order === 'asc';
-    setOrder(isAsc ? 'desc' : 'asc');
-    setOrderBy(property);
-  };
+  const bucketName = 'phd-applications';
 
-  const handleSelectAllClick = (event) => {
-    if (event.target.checked) {
-      const newSelecteds = USERLIST.map((n) => n.name);
-      setSelected(newSelecteds);
-      return;
+  const handleImageChange = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+
+      reader.onload = async (e) => {
+        setProfilePic(e.target.result);
+
+        // Generate the S3 signed URL for upload
+        const signedUrl = await getSignedUrl(file.name, file.type);
+        if (signedUrl) {
+          try {
+            await uploadToS3(signedUrl, file);
+
+            // Generate S3 image URL
+            const s3ImageUrl = `https://${bucketName}.s3.amazonaws.com/${file.name}`;
+
+            setPfpUrl(s3ImageUrl);
+
+            // TODO: Update your backend/user database with s3ImageUrl
+            // For example:
+            // await updateUserProfilePicture(s3ImageUrl);
+          } catch (error) {
+            console.error('Failed to upload to S3', error);
+          }
+        }
+      };
+
+      reader.readAsDataURL(file);
     }
-    setSelected([]);
   };
 
-  const handleClick = (event, name) => {
-    const selectedIndex = selected.indexOf(name);
-    let newSelected = [];
-    if (selectedIndex === -1) {
-      newSelected = newSelected.concat(selected, name);
-    } else if (selectedIndex === 0) {
-      newSelected = newSelected.concat(selected.slice(1));
-    } else if (selectedIndex === selected.length - 1) {
-      newSelected = newSelected.concat(selected.slice(0, -1));
-    } else if (selectedIndex > 0) {
-      newSelected = newSelected.concat(selected.slice(0, selectedIndex), selected.slice(selectedIndex + 1));
-    }
-    setSelected(newSelected);
+  const mockUserData = {
+    firstName: 'John',
+    lastName: 'Doe',
+    email: 'john.doe@example.com',
+    skills: 'React, JavaScript, CSS',
+    interest: 'Web Development',
+    bio: 'I am a passionate web developer.',
   };
 
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
+  useEffect(() => {
+    // Fetching the user's profile data which includes the image URL
+    setUserData(mockUserData);
+    fetch('/api/user')
+      .then((response) => response.json())
+      .then((data) => {
+        setUserData(data);
+
+        setPfpUrl(data.pfpUrl);
+        if (data.pfpUrl != null) {
+          setProfilePic(data.pfpUrl);
+        }
+      });
+  }, []);
+
+  const handleUpdateProfile = () => {
+    // Make an API call to update user data
+    // Assume POST request to /api/user/update with userData as body
+    fetch('/api/user/update', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        // Toggle to view mode
+        setEditMode(false);
+        // Next, update the profile picture URL
+        return fetch('/api/user/update/pfp', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ pfpUrl }),
+        });
+      })
+      .then((response) => response.json())
+      .then((pfpUrl) => {
+        // Toggle to view mode
+        setEditMode(false);
+        // Handle other scenarios as needed, like error messages
+      });
   };
-
-  const handleChangeRowsPerPage = (event) => {
-    setPage(0);
-    setRowsPerPage(parseInt(event.target.value, 10));
-  };
-
-  const handleFilterByName = (event) => {
-    setPage(0);
-    setFilterName(event.target.value);
-  };
-
-  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - USERLIST.length) : 0;
-
-  const filteredUsers = applySortFilter(USERLIST, getComparator(order, orderBy), filterName);
-
-  const isNotFound = !filteredUsers.length && !!filterName;
 
   return (
-    <>
-      <Helmet>
-        <title> User | Minimal UI </title>
-      </Helmet>
-
-      <Container>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
-          <Typography variant="h4" gutterBottom>
-            User
-          </Typography>
-          <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />}>
-            New User
-          </Button>
-        </Stack>
-
-        <Card>
-          <UserListToolbar numSelected={selected.length} filterName={filterName} onFilterName={handleFilterByName} />
-
-          <Scrollbar>
-            <TableContainer sx={{ minWidth: 800 }}>
-              <Table>
-                <UserListHead
-                  order={order}
-                  orderBy={orderBy}
-                  headLabel={TABLE_HEAD}
-                  rowCount={USERLIST.length}
-                  numSelected={selected.length}
-                  onRequestSort={handleRequestSort}
-                  onSelectAllClick={handleSelectAllClick}
-                />
-                <TableBody>
-                  {filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
-                    const { id, name, role, status, company, avatarUrl, isVerified } = row;
-                    const selectedUser = selected.indexOf(name) !== -1;
-
+    <div>
+      <Grid container spacing={3}>
+        <Grid item xs={12} sm={12} md={8}>
+          <Card>
+            <CardHeader
+              title={editMode ? 'Edit Profile' : 'View Profile'}
+              sx={{ backgroundColor: '#3f51b5', color: 'white' }}
+            />
+            <CardContent>
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={12} md={12}>
+                  <img src={profilePic || mockProfileImage} alt="Profile" width="100" />
+                  {editMode && <input type="file" accept="image/*" onChange={(e) => handleImageChange(e)} />}
+                </Grid>
+                {Object.keys(userData).map((key) => {
+                  if (key !== 'id' && key !== 'password' && key !== 'provider' && key !== 'pfpUrl' && key !== 'email') {
                     return (
-                      <TableRow hover key={id} tabIndex={-1} role="checkbox" selected={selectedUser}>
-                        <TableCell padding="checkbox">
-                          <Checkbox checked={selectedUser} onChange={(event) => handleClick(event, name)} />
-                        </TableCell>
-
-                        <TableCell component="th" scope="row" padding="none">
-                          <Stack direction="row" alignItems="center" spacing={2}>
-                            <Avatar alt={name} src={avatarUrl} />
-                            <Typography variant="subtitle2" noWrap>
-                              {name}
-                            </Typography>
-                          </Stack>
-                        </TableCell>
-
-                        <TableCell align="left">{company}</TableCell>
-
-                        <TableCell align="left">{role}</TableCell>
-
-                        <TableCell align="left">{isVerified ? 'Yes' : 'No'}</TableCell>
-
-                        <TableCell align="left">
-                          <Label color={(status === 'banned' && 'error') || 'success'}>{sentenceCase(status)}</Label>
-                        </TableCell>
-
-                        <TableCell align="right">
-                          <IconButton size="large" color="inherit" onClick={handleOpenMenu}>
-                            <Iconify icon={'eva:more-vertical-fill'} />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
+                      <Grid item xs={12} sm={12} md={12} key={key}>
+                        <TextField
+                          fullWidth
+                          label={key.charAt(0).toUpperCase() + key.slice(1)}
+                          variant="outlined"
+                          value={userData[key]}
+                          onChange={(e) =>
+                            setUserData((prev) => ({
+                              ...prev,
+                              [key]: e.target.value,
+                            }))
+                          }
+                          disabled={!editMode}
+                        />
+                      </Grid>
                     );
-                  })}
-                  {emptyRows > 0 && (
-                    <TableRow style={{ height: 53 * emptyRows }}>
-                      <TableCell colSpan={6} />
-                    </TableRow>
-                  )}
-                </TableBody>
-
-                {isNotFound && (
-                  <TableBody>
-                    <TableRow>
-                      <TableCell align="center" colSpan={6} sx={{ py: 3 }}>
-                        <Paper
-                          sx={{
-                            textAlign: 'center',
-                          }}
-                        >
-                          <Typography variant="h6" paragraph>
-                            Not found
-                          </Typography>
-
-                          <Typography variant="body2">
-                            No results found for &nbsp;
-                            <strong>&quot;{filterName}&quot;</strong>.
-                            <br /> Try checking for typos or using complete words.
-                          </Typography>
-                        </Paper>
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                )}
-              </Table>
-            </TableContainer>
-          </Scrollbar>
-
-          <TablePagination
-            rowsPerPageOptions={[5, 10, 25]}
-            component="div"
-            count={USERLIST.length}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={handleChangePage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-          />
-        </Card>
-      </Container>
-
-      <Popover
-        open={Boolean(open)}
-        anchorEl={open}
-        onClose={handleCloseMenu}
-        anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-        PaperProps={{
-          sx: {
-            p: 1,
-            width: 140,
-            '& .MuiMenuItem-root': {
-              px: 1,
-              typography: 'body2',
-              borderRadius: 0.75,
-            },
-          },
-        }}
-      >
-        <MenuItem>
-          <Iconify icon={'eva:edit-fill'} sx={{ mr: 2 }} />
-          Edit
-        </MenuItem>
-
-        <MenuItem sx={{ color: 'error.main' }}>
-          <Iconify icon={'eva:trash-2-outline'} sx={{ mr: 2 }} />
-          Delete
-        </MenuItem>
-      </Popover>
-    </>
+                  }
+                  return null;
+                })}
+              </Grid>
+            </CardContent>
+            <CardActions>
+              {editMode ? (
+                <Button variant="contained" color="primary" onClick={handleUpdateProfile}>
+                  Update Profile
+                </Button>
+              ) : (
+                <Button variant="contained" color="primary" onClick={() => setEditMode(true)}>
+                  Edit Profile
+                </Button>
+              )}
+            </CardActions>
+          </Card>
+        </Grid>
+      </Grid>
+    </div>
   );
 }

@@ -17,23 +17,35 @@ const navConfig = [
     icon: icon('ic_user'),
   },
   {
-    title: 'product',
+    title: 'log out',
     path: '/dashboard/products',
     icon: icon('ic_cart'),
   },
   {
-    title: 'blog',
+    title: 'new application',
     path: '/dashboard/blog',
     icon: icon('ic_blog'),
   },
+  // {
+  //   title: 'login',
+  //   path: '/login',
+  //   icon: icon('ic_lock'),
+  // },
   {
-    title: 'login',
-    path: '/login',
-    icon: icon('ic_lock'),
+    title: 'Profile Settings',
+    path: '/dashboard/settings',
+    icon: icon('ic_disabled'),
   },
+
   {
-    title: 'Not found',
-    path: '/404',
+    title: 'Saved Applications',
+    path: '/dashboard/saved',
+    icon: icon('ic_blog'),
+  },
+
+  {
+    title: 'Home',
+    path: 'https://www.phdinsiders.com/',
     icon: icon('ic_disabled'),
   },
 ];

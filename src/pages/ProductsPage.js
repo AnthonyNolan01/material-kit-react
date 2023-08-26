@@ -1,50 +1,48 @@
-import { Helmet } from 'react-helmet-async';
-import { useState } from 'react';
-// @mui
-import { Container, Stack, Typography } from '@mui/material';
-// components
-import { ProductSort, ProductList, ProductCartWidget, ProductFilterSidebar } from '../sections/@dashboard/products';
-// mock
-import PRODUCTS from '../_mock/products';
+import React, { useCallback } from 'react';
+import { Button } from '@mui/material';
+import { styled } from '@mui/system';
 
-// ----------------------------------------------------------------------
+const CardCategoryWhite = styled('div')({
+  color: 'rgba(255,255,255,.62)',
+  margin: '0',
+  fontSize: '14px',
+  marginTop: '0',
+  marginBottom: '0',
+});
 
-export default function ProductsPage() {
-  const [openFilter, setOpenFilter] = useState(false);
+const CardTitleWhite = styled('div')({
+  color: '#FFFFFF',
+  marginTop: '0px',
+  minHeight: 'auto',
+  fontWeight: '300',
+  fontFamily: "'Roboto', 'Helvetica', 'Arial', sans-serif",
+  marginBottom: '3px',
+  textDecoration: 'none',
+});
 
-  const handleOpenFilter = () => {
-    setOpenFilter(true);
-  };
-
-  const handleCloseFilter = () => {
-    setOpenFilter(false);
-  };
+function LogoutComponent() {
+  const handleLogout = useCallback(async () => {
+    try {
+      const response = await fetch('/logout', {
+        method: 'POST',
+      });
+      if (response.ok) {
+        // Redirect to login page or any other page you'd like after logout
+        window.location.href = '/login';
+      } else {
+        // Handle any errors that occur during logout
+        console.error('Failed to log out');
+      }
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  }, []);
 
   return (
-    <>
-      <Helmet>
-        <title> Dashboard: Products | Minimal UI </title>
-      </Helmet>
-
-      <Container>
-        <Typography variant="h4" sx={{ mb: 5 }}>
-          Products
-        </Typography>
-
-        <Stack direction="row" flexWrap="wrap-reverse" alignItems="center" justifyContent="flex-end" sx={{ mb: 5 }}>
-          <Stack direction="row" spacing={1} flexShrink={0} sx={{ my: 1 }}>
-            <ProductFilterSidebar
-              openFilter={openFilter}
-              onOpenFilter={handleOpenFilter}
-              onCloseFilter={handleCloseFilter}
-            />
-            <ProductSort />
-          </Stack>
-        </Stack>
-
-        <ProductList products={PRODUCTS} />
-        <ProductCartWidget />
-      </Container>
-    </>
+    <Button variant="contained" color="primary" onClick={handleLogout}>
+      Log Out
+    </Button>
   );
 }
+
+export default LogoutComponent;

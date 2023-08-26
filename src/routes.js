@@ -9,6 +9,11 @@ import LoginPage from './pages/LoginPage';
 import Page404 from './pages/Page404';
 import ProductsPage from './pages/ProductsPage';
 import DashboardAppPage from './pages/DashboardAppPage';
+import ProfileSettings from './pages/ProfileSettings';
+import HomeLink from './pages/HomeLink';
+import Maps from './pages/Maps';
+import SignUp from './pages/SignUp';
+import InterestSelection from './pages/InterestSelection';
 
 // ----------------------------------------------------------------------
 
@@ -23,12 +28,26 @@ export default function Router() {
         { path: 'user', element: <UserPage /> },
         { path: 'products', element: <ProductsPage /> },
         { path: 'blog', element: <BlogPage /> },
+        { path: 'settings', element: <ProfileSettings /> },
+        { path: 'home', element: <HomeLink /> },
+        { path: 'saved', element: <Maps /> },
       ],
     },
     {
       path: 'login',
       element: <LoginPage />,
     },
+
+    {
+      path: 'sign-up',
+      element: <SignUp />,
+    },
+
+    {
+      path: 'interest',
+      element: <InterestSelection />,
+    },
+
     {
       element: <SimpleLayout />,
       children: [
@@ -37,6 +56,7 @@ export default function Router() {
         { path: '*', element: <Navigate to="/404" /> },
       ],
     },
+
     {
       path: '*',
       element: <Navigate to="/404" replace />,
