@@ -7,11 +7,11 @@ import BlogPage from './pages/BlogPage';
 import UserPage from './pages/UserPage';
 import LoginPage from './pages/LoginPage';
 import Page404 from './pages/Page404';
-import ProductsPage from './pages/ProductsPage';
+import ProductsPage from './pages/LogOut';
 import DashboardAppPage from './pages/DashboardAppPage';
 import ProfileSettings from './pages/ProfileSettings';
 import HomeLink from './pages/HomeLink';
-import Maps from './pages/Maps';
+import Maps from './pages/SavedApps';
 import SignUp from './pages/SignUp';
 import InterestSelection from './pages/InterestSelection';
 
