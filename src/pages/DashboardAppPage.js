@@ -164,14 +164,14 @@ function Dashboard() {
       .then((response) => setApplications(response.data))
       .catch((error) => console.error('Error fetching applications:', error));
 
-    axios
-      .get('http://localhost:8080/api/user', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('jwtToken')}` },
-      })
-      .then((response) => setUserId(response.data.id))
-      .catch((error) => console.error('Error fetching user:', error));
+    // axios
+    //   .get('http://localhost:8080/api/user', {
+    //     headers: { Authorization: `Bearer ${localStorage.getItem('jwtToken')}` },
+    //   })
+    //   .then((response) => setUserId(response.data.id))
+    //   .catch((error) => console.error('Error fetching user:', error));
 
-    setApplications(mockApps);
+    // setApplications(mockApps);
     //setUserId(mockUser.id);
   }, []);
 
